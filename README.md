@@ -163,3 +163,7 @@ samples/raw_webinar_notes.txt
 ```
 
 Use it as the source material for local testing or demo recording.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
