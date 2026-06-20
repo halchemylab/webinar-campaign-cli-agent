@@ -32,27 +32,42 @@ This project uses a Google ADK agent to extract structured webinar details, draf
 
 ## Architecture
 
+```mermaid
+flowchart LR
+    A[Raw webinar notes] --> B[ADK root_agent]
+
+    B --> C[generate_utm_url]
+    B --> D[generate_qr_code]
+    B --> E[save_campaign_file]
+
+    C --> F[Tracked registration links]
+    D --> G[Timestamped QR code PNG]
+    E --> H[Timestamped campaign copy files]
+
+    F --> I[output/]
+    G --> I
+    H --> I
+
+    I --> J[MCP server]
+    J --> K[list_generated_assets]
+    J --> L[read_generated_asset]
+```
+
+| Component | Role |
+|---|---|
+| `root_agent` | Coordinates campaign generation from rough webinar notes |
+| Agent tools | Create UTM URLs, QR codes, and timestamped campaign files |
+| `output/` | Local ignored folder for generated campaign assets |
+| MCP server | Lets MCP-compatible clients list and inspect generated text assets |
+
+Generated file examples:
+
 ```text
-Raw webinar notes
-      |
-      v
-ADK root_agent
-      |
-      +--> UTM tool
-      +--> QR code tool
-      +--> File export tool
-      |
-      v
 output/
   landing_page_YYYYMMDD_HHMMSS.md
   email_draft_YYYYMMDD_HHMMSS.txt
   social_posts_YYYYMMDD_HHMMSS.md
   campaign_qr_YYYYMMDD_HHMMSS.png
-
-MCP server
-      |
-      +--> list_generated_assets
-      +--> read_generated_asset
 ```
 
 ## Setup
