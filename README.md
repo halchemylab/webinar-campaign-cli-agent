@@ -4,7 +4,29 @@ Built as the capstone project for Kaggle's 5-Day AI Agents Intensive with Google
 
 ### Overview
 
-Webinar Campaign Forge Agent is an AI agent that turns rough webinar notes into omnichannel campaign assets: landing page copy, business email drafts, LinkedIn and Facebook posts, UTM tracking links, and QR codes.
+Webinar Campaign Forge Agent turns rough webinar notes into campaign-ready assets for local marketing workflows. It supports full campaign generation, single-channel generation, missing-info validation, UTM tracking links, QR codes, and safe timestamped local file export.
+
+The project can run through the Google ADK agent interface or through a normal CLI file workflow. Both modes reuse the same underlying campaign tools.
+
+## Two Ways to Run
+
+### 1. ADK Agent Mode
+
+Use this mode to demonstrate the Kaggle 5-Day AI Agents / Google ADK capstone requirement. It exposes the ADK `root_agent` and tool-calling agent interface.
+
+```bash
+adk run webinar_campaign_agent
+```
+
+### 2. CLI File Mode
+
+Use this mode for a practical local workflow from a notes file. It reads `input/raw_webinar_notes.txt` and writes generated files to `output/`.
+
+```bash
+python run_from_file.py review
+python run_from_file.py linkedin
+python run_from_file.py full
+```
 
 ### Track
 
@@ -22,13 +44,12 @@ This project uses a Google ADK agent to read the user's requested output mode, e
 
 | Capstone Concept | Where Demonstrated |
 |---|---|
-| ADK Agent | `webinar_campaign_agent/agent.py` |
-| Tool use | `generate_utm_url`, `generate_qr_code`, `save_campaign_file`, `review_webinar_notes` |
-| MCP Server | `webinar_campaign_agent/mcp_server.py` |
-| Antigravity | Demonstrated in video |
-| Security features | Safe filename handling, output directory restriction, no committed secrets |
-| Deployability | Local setup instructions and ADK Web demo |
-| Agent skills | Campaign generation, structured extraction, validation, tracking links, QR codes, asset export |
+| ADK Agent | `webinar_campaign_agent/agent.py` defines the `root_agent` |
+| Tool use / agent skills | `review_webinar_notes`, `generate_utm_url`, `generate_qr_code`, `save_campaign_file` |
+| MCP Server | `webinar_campaign_agent/mcp_server.py` exposes generated text assets |
+| Antigravity | Demonstrated in the video as the development/review environment |
+| Security features | Safe filenames, output directory restriction, URL validation, no committed secrets |
+| Deployability | Reproducible local setup, CLI runner, and ADK Web demo |
 
 ## Architecture
 
@@ -60,29 +81,29 @@ webinar-campaign-cli-agent/
   LICENSE
 ```
 
-```mermaid
-flowchart LR
-    A[ADK prompt] --> B[ADK root_agent]
-    C[input/raw_webinar_notes.txt] --> D[CLI runner]
-    D --> B
-
-    B --> E[skills/utm_skill.py]
-    B --> F[skills/qr_skill.py]
-    B --> G[skills/file_skill.py]
-    B --> H[skills/validation_skill.py]
-
-    E --> I[Tracked registration links]
-    F --> J[Timestamped QR code PNG]
-    G --> K[Timestamped campaign copy files]
-    H --> L[Missing-info checklist]
-
-    I --> M[output/]
-    J --> M
-    K --> M
-
-    M --> N[MCP server]
-    N --> O[list_generated_assets]
-    N --> P[read_generated_asset]
+```text
+                Raw webinar notes
+                       |
+                       v
+           +----------------------------+
+           | Shared campaign tools      |
+           | - validation_skill.py      |
+           | - utm_skill.py             |
+           | - qr_skill.py              |
+           | - file_skill.py            |
+           +-------------+--------------+
+                         ^
+                         |
+              +----------+----------+
+              |                     |
+              v                     v
+       ADK Agent Mode          CLI File Mode
+       adk run ...             python run_from_file.py ...
+              |                     |
+              +----------+----------+
+                         |
+                         v
+                      output/
 ```
 
 | Component | Role |
@@ -105,7 +126,7 @@ output/
 
 ## Output Modes
 
-The agent reads the user's intent before generating assets.
+The agent reads the user's intent before generating assets. These same modes can be requested in ADK mode through prompts or in CLI mode through command arguments.
 
 | User asks | Agent generates |
 |---|---|
@@ -117,6 +138,24 @@ The agent reads the user's intent before generating assets.
 | Social posts only | LinkedIn and Facebook posts, UTM/share links |
 | QR code only | QR code from the registration URL |
 | Review the campaign | Suggestions only, unless file generation is requested |
+
+## Why This Is Agentic
+
+The agent reads the requested output mode first instead of always generating every artifact. For LinkedIn-only requests, it generates only LinkedIn copy and tracking links. For full-campaign requests, it coordinates validation, copy generation, UTM link generation, QR creation, and safe file export.
+
+## Campaign Validation
+
+Review mode and normal generation use missing-info validation to identify gaps in the campaign brief. The agent uses placeholders instead of inventing missing facts, so incomplete notes remain visible during generation.
+
+Example checklist:
+
+```markdown
+## Missing / Needs Review
+
+- [ ] Speaker bio is missing
+- [ ] Webinar platform is unclear
+- [ ] CTA needs approval
+```
 
 ## Setup
 
@@ -161,13 +200,9 @@ Then edit `.env` and replace the placeholder with your Gemini API key:
 GOOGLE_API_KEY="YOUR_API_KEY"
 ```
 
-## Usage
+## Run the Agent: ADK Agent Mode
 
-This project supports two execution modes.
-
-### 1. ADK Agent Mode
-
-Use this mode to run the project as an ADK agent.
+Use this mode to run the project as an ADK agent for the capstone requirement.
 
 ```bash
 adk run webinar_campaign_agent
@@ -185,7 +220,7 @@ Date: July 24, 2026
 Registration link: https://example.com/webinar
 ```
 
-### 2. CLI File Mode
+## Run From a Notes File: CLI File Mode
 
 Use this mode to process notes from a local input file.
 
@@ -276,10 +311,13 @@ The MCP server exposes generated campaign assets through tools so another MCP-co
 
 ## Security Notes
 
+These security features are local workflow protections for a capstone/demo project, not enterprise hardening.
+
 - `.env` is ignored by Git.
 - Generated campaign files are restricted to `output/`.
 - Path traversal is blocked with safe filename handling.
 - Only `.md`, `.txt`, and `.png` output files are allowed.
+- UTM and QR code tools validate URLs before generating tracking links or QR codes.
 - Generated filenames include a timestamp so campaign runs are easier to track.
 - The project does not require committing API keys, passwords, or generated client assets.
 
