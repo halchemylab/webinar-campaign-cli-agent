@@ -1,6 +1,7 @@
 import os
 import re
 import urllib.parse
+from datetime import datetime
 from pathlib import Path
 
 import qrcode
@@ -13,6 +14,15 @@ OUTPUT_DIR = Path("output")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 ALLOWED_EXTENSIONS = {".md", ".txt", ".png"}
+
+
+def _timestamped_filename(filename: str) -> str:
+    """
+    Adds a generated timestamp before the file extension.
+    """
+    path = Path(filename)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{path.stem}_{timestamp}{path.suffix}"
 
 
 def _safe_filename(filename: str) -> str:
@@ -91,9 +101,9 @@ def generate_utm_url(
 
 def generate_qr_code(url: str, filename: str = "campaign_qr.png") -> dict:
     """
-    Creates a QR code PNG in output/.
+    Creates a timestamped QR code PNG in output/.
     """
-    safe_name = _safe_filename(filename)
+    safe_name = _timestamped_filename(_safe_filename(filename))
 
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
@@ -119,7 +129,7 @@ def generate_qr_code(url: str, filename: str = "campaign_qr.png") -> dict:
 
 def save_campaign_file(filename: str, content: str) -> dict:
     """
-    Saves a text campaign asset to output/.
+    Saves a timestamped text campaign asset to output/.
     """
     safe_name = _safe_filename(filename)
 
@@ -129,7 +139,7 @@ def save_campaign_file(filename: str, content: str) -> dict:
             "message": "Use generate_qr_code for PNG files.",
         }
 
-    filepath = OUTPUT_DIR / safe_name
+    filepath = OUTPUT_DIR / _timestamped_filename(safe_name)
     filepath.write_text(content, encoding="utf-8")
 
     return {
@@ -161,9 +171,10 @@ Always produce:
 5. UTM links for linkedin, facebook, and email.
 6. QR code for the primary registration link.
 7. Saved output files:
-   - landing_page.md
-   - email_draft.txt
-   - social_posts.md
+   - timestamped landing page markdown file, for example landing_page_YYYYMMDD_HHMMSS.md
+   - timestamped email draft text file, for example email_draft_YYYYMMDD_HHMMSS.txt
+   - timestamped social posts markdown file, for example social_posts_YYYYMMDD_HHMMSS.md
+   - timestamped QR code PNG file, for example campaign_qr_YYYYMMDD_HHMMSS.png
 
 If information is missing, do not stop.
 Use clear placeholders like [INSERT SPEAKER NAME] or [INSERT WEBINAR DATE].

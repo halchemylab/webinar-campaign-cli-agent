@@ -3,4 +3,5 @@
 __pycache__/
 *.pyc
 output/
+.adk/
 .DS_Store
