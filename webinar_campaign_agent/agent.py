@@ -30,14 +30,24 @@ def _safe_filename(filename: str) -> str:
     Prevents path traversal and limits file types.
     This is a visible security feature for the capstone.
     """
-    name = os.path.basename(filename).strip()
+    # Normalize separators (convert backslashes to forward slashes for cross-platform safety)
+    normalized = filename.replace("\\", "/")
+    name = os.path.basename(normalized).strip()
 
-    if not name:
-        raise ValueError("Filename cannot be empty.")
+    if not name or name in {".", ".."}:
+        raise ValueError("Invalid or empty filename.")
 
     suffix = Path(name).suffix.lower()
     if suffix not in ALLOWED_EXTENSIONS:
         raise ValueError(f"Unsupported file extension: {suffix}")
+
+    # Ensure path resolution stays inside OUTPUT_DIR
+    target_path = (OUTPUT_DIR / name).resolve()
+    try:
+        # relative_to raises ValueError if target_path is not under OUTPUT_DIR
+        target_path.relative_to(OUTPUT_DIR.resolve())
+    except ValueError:
+        raise ValueError("Path traversal detected.")
 
     return name
 

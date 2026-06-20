@@ -21,11 +21,22 @@ def read_generated_asset(filename: str) -> str:
     """
     Reads a generated text asset from output/.
     """
-    safe_name = Path(filename).name
-    path = OUTPUT_DIR / safe_name
+    normalized = filename.replace("\\", "/")
+    safe_name = Path(normalized).name
 
-    if not path.exists():
-        return f"File not found: {safe_name}"
+    if not safe_name or safe_name in {".", ".."}:
+        return "Invalid filename."
+
+    path = (OUTPUT_DIR / safe_name).resolve()
+
+    # Ensure the resolved path is inside the output directory
+    try:
+        path.relative_to(OUTPUT_DIR.resolve())
+    except ValueError:
+        return "Access denied: Path traversal detected."
+
+    if not path.is_file():
+        return f"File not found or is not a file: {safe_name}"
 
     if path.suffix.lower() not in {".md", ".txt"}:
         return f"Cannot read non-text file: {safe_name}"
