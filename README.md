@@ -2,19 +2,19 @@
 
 Built as the capstone project for Kaggle's 5-Day AI Agents Intensive with Google.
 
-## Overview
+### Overview
 
 Webinar Campaign Forge Agent is an AI agent that turns rough webinar notes into omnichannel campaign assets: landing page copy, business email drafts, LinkedIn and Facebook posts, UTM tracking links, and QR codes.
 
-## Track
+### Track
 
 Agents for Business
 
-## Problem
+### Problem
 
 Marketing teams often spend hours converting webinar planning notes into publishable campaign materials. This creates delays, inconsistent messaging, and tracking mistakes.
 
-## Solution
+### Solution
 
 This project uses a Google ADK agent to extract structured webinar details, draft campaign copy, generate UTM links, create a QR code, and save reusable campaign files into an output folder.
 
