@@ -56,54 +56,63 @@ This project uses a Google ADK agent to read the user's requested output mode, e
 The project can run in two modes. ADK mode demonstrates the agent implementation required by the course. CLI mode provides a practical local workflow where users place notes in an input file and generate only the assets they need.
 
 ```text
-webinar-campaign-cli-agent/
-  webinar_campaign_agent/
-    __init__.py
-    agent.py
-    mcp_server.py
-    skills/
-      __init__.py
-      utm_skill.py
-      qr_skill.py
-      file_skill.py
-      validation_skill.py
-  input/
-    .gitkeep
-    raw_webinar_notes.txt
-  output/
-  samples/
-    raw_webinar_notes.txt
-  run_from_file.py
-  README.md
-  requirements.txt
-  .env.template
-  .gitignore
-  LICENSE
+webinar-campaign-cli-agent
+|-- webinar_campaign_agent
+|   |-- agent.py              # ADK root_agent and instructions
+|   |-- mcp_server.py         # MCP access to generated text assets
+|   |-- __init__.py
+|   `-- skills
+|       |-- validation_skill.py
+|       |-- utm_skill.py
+|       |-- qr_skill.py
+|       |-- file_skill.py
+|       `-- __init__.py
+|-- input
+|   |-- raw_webinar_notes.txt # local CLI input file
+|   `-- .gitkeep
+|-- output                    # generated assets, ignored by Git
+|-- samples
+|   `-- raw_webinar_notes.txt
+|-- run_from_file.py          # CLI File Mode
+|-- requirements.txt
+|-- .env.template
+|-- .gitignore
+|-- README.md
+`-- LICENSE
 ```
 
-```text
-                Raw webinar notes
-                       |
-                       v
-           +----------------------------+
-           | Shared campaign tools      |
-           | - validation_skill.py      |
-           | - utm_skill.py             |
-           | - qr_skill.py              |
-           | - file_skill.py            |
-           +-------------+--------------+
-                         ^
-                         |
-              +----------+----------+
-              |                     |
-              v                     v
-       ADK Agent Mode          CLI File Mode
-       adk run ...             python run_from_file.py ...
-              |                     |
-              +----------+----------+
-                         |
-                         v
-                      output/
+```mermaid
+flowchart TD
+    notes["Raw webinar notes"]
+
+    adk["ADK Agent Mode<br/><code>adk run webinar_campaign_agent</code>"]
+    cli["CLI File Mode<br/><code>python run_from_file.py ...</code>"]
+
+    agent["ADK root_agent<br/><code>webinar_campaign_agent/agent.py</code>"]
+
+    tools["Shared campaign tools"]
+    validation["<code>validation_skill.py</code><br/>missing-info review"]
+    utm["<code>utm_skill.py</code><br/>UTM tracking links"]
+    qr["<code>qr_skill.py</code><br/>QR code PNGs"]
+    files["<code>file_skill.py</code><br/>safe timestamped export"]
+
+    output["<code>output/</code><br/>generated campaign assets"]
+    mcp["MCP server<br/><code>webinar_campaign_agent/mcp_server.py</code>"]
+
+    notes --> adk
+    notes --> cli
+    adk --> agent
+    cli --> agent
+    agent --> tools
+    tools --> validation
+    tools --> utm
+    tools --> qr
+    tools --> files
+    validation --> output
+    utm --> output
+    qr --> output
+    files --> output
+    output --> mcp
 ```
 
 | Component | Role |
