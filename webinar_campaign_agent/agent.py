@@ -1,161 +1,14 @@
-import os
-import re
-import urllib.parse
-from datetime import datetime
-from pathlib import Path
-
-import qrcode
 from dotenv import load_dotenv
 from google.adk.agents.llm_agent import Agent
 
+from webinar_campaign_agent.skills import (
+    generate_qr_code,
+    generate_utm_url,
+    review_webinar_notes,
+    save_campaign_file,
+)
+
 load_dotenv()
-
-OUTPUT_DIR = Path("output")
-OUTPUT_DIR.mkdir(exist_ok=True)
-
-ALLOWED_EXTENSIONS = {".md", ".txt", ".png"}
-
-
-def _timestamped_filename(filename: str) -> str:
-    """
-    Adds a generated timestamp before the file extension.
-    """
-    path = Path(filename)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"{path.stem}_{timestamp}{path.suffix}"
-
-
-def _safe_filename(filename: str) -> str:
-    """
-    Prevents path traversal and limits file types.
-    This is a visible security feature for the capstone.
-    """
-    # Normalize separators (convert backslashes to forward slashes for cross-platform safety)
-    normalized = filename.replace("\\", "/")
-    name = os.path.basename(normalized).strip()
-
-    if not name or name in {".", ".."}:
-        raise ValueError("Invalid or empty filename.")
-
-    suffix = Path(name).suffix.lower()
-    if suffix not in ALLOWED_EXTENSIONS:
-        raise ValueError(f"Unsupported file extension: {suffix}")
-
-    # Ensure path resolution stays inside OUTPUT_DIR
-    target_path = (OUTPUT_DIR / name).resolve()
-    try:
-        # relative_to raises ValueError if target_path is not under OUTPUT_DIR
-        target_path.relative_to(OUTPUT_DIR.resolve())
-    except ValueError:
-        raise ValueError("Path traversal detected.")
-
-    return name
-
-
-def _safe_campaign_slug(campaign: str) -> str:
-    """
-    Converts a campaign name into a safe UTM slug.
-    """
-    slug = campaign.lower().strip()
-    slug = re.sub(r"[^a-z0-9]+", "_", slug)
-    slug = slug.strip("_")
-    return slug or "webinar_campaign"
-
-
-def generate_utm_url(
-    base_url: str,
-    source: str,
-    medium: str,
-    campaign: str,
-) -> dict:
-    """
-    Generates a safe UTM tracking URL and optional social share URL.
-    """
-    parsed = urllib.parse.urlparse(base_url)
-
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        return {
-            "status": "error",
-            "message": "base_url must be a valid http or https URL.",
-        }
-
-    campaign_slug = _safe_campaign_slug(campaign)
-
-    query = dict(urllib.parse.parse_qsl(parsed.query))
-    query.update(
-        {
-            "utm_source": source.lower().strip(),
-            "utm_medium": medium.lower().strip(),
-            "utm_campaign": campaign_slug,
-        }
-    )
-
-    final_url = urllib.parse.urlunparse(
-        parsed._replace(query=urllib.parse.urlencode(query))
-    )
-
-    encoded_url = urllib.parse.quote(final_url, safe="")
-
-    share_url = None
-    if source.lower() == "linkedin":
-        share_url = f"https://www.linkedin.com/sharing/share-offsite/?url={encoded_url}"
-    elif source.lower() == "facebook":
-        share_url = f"https://www.facebook.com/sharer/sharer.php?u={encoded_url}"
-
-    return {
-        "status": "success",
-        "tracking_url": final_url,
-        "share_url": share_url,
-    }
-
-
-def generate_qr_code(url: str, filename: str = "campaign_qr.png") -> dict:
-    """
-    Creates a timestamped QR code PNG in output/.
-    """
-    safe_name = _timestamped_filename(_safe_filename(filename))
-
-    parsed = urllib.parse.urlparse(url)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        return {
-            "status": "error",
-            "message": "QR code URL must be a valid http or https URL.",
-        }
-
-    filepath = OUTPUT_DIR / safe_name
-
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
-    qr.add_data(url)
-    qr.make(fit=True)
-
-    img = qr.make_image(fill_color="black", back_color="white")
-    img.save(filepath)
-
-    return {
-        "status": "success",
-        "path": str(filepath),
-    }
-
-
-def save_campaign_file(filename: str, content: str) -> dict:
-    """
-    Saves a timestamped text campaign asset to output/.
-    """
-    safe_name = _safe_filename(filename)
-
-    if Path(safe_name).suffix.lower() == ".png":
-        return {
-            "status": "error",
-            "message": "Use generate_qr_code for PNG files.",
-        }
-
-    filepath = OUTPUT_DIR / _timestamped_filename(safe_name)
-    filepath.write_text(content, encoding="utf-8")
-
-    return {
-        "status": "success",
-        "path": str(filepath),
-    }
 
 
 SYSTEM_INSTRUCTION = """
@@ -222,6 +75,7 @@ Default behavior:
 - Do not generate unrelated assets.
 
 Missing information behavior:
+- Use review_webinar_notes before review_only responses and when the user asks to check whether notes are complete.
 - If important details are missing, use clear placeholders like [INSERT SPEAKER NAME], [INSERT DATE], or [INSERT REGISTRATION URL].
 - Do not invent factual details.
 
@@ -229,7 +83,8 @@ Tool behavior:
 - Use generate_utm_url when the requested asset needs tracking links.
 - Use generate_qr_code only for full_campaign or qr_only.
 - Use save_campaign_file only when the mode requires saved files or the user explicitly asks to save output.
-- Do not use tools in review_only unless the user explicitly asks for generated or saved assets.
+- Use review_webinar_notes in review_only to produce a missing-information checklist.
+- Do not use file or QR tools in review_only unless the user explicitly asks for generated or saved assets.
 
 Security rules:
 - Never ask for or expose API keys.
@@ -247,5 +102,6 @@ root_agent = Agent(
         generate_utm_url,
         generate_qr_code,
         save_campaign_file,
+        review_webinar_notes,
     ],
 )

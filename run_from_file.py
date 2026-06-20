@@ -23,7 +23,7 @@ MODE_PROMPTS = {
     "social": "Generate only LinkedIn and Facebook posts with their UTM tracking links.",
     "landing": "Generate only landing page copy.",
     "qr": "Generate only a QR code for the registration URL.",
-    "review": "Review these webinar campaign notes and suggest improvements. Do not generate files.",
+    "review": "Review these webinar campaign notes, produce a missing-information checklist, and suggest improvements. Do not generate files.",
 }
 
 
@@ -49,6 +49,7 @@ Use the webinar notes below.
 
 If a registration URL exists in the notes, use it as the destination URL.
 If details are missing, use visible placeholders instead of inventing facts.
+For review mode, use the review_webinar_notes tool before giving recommendations.
 
 NOTES:
 {notes}

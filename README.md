@@ -23,40 +23,73 @@ This project uses a Google ADK agent to read the user's requested output mode, e
 | Capstone Concept | Where Demonstrated |
 |---|---|
 | ADK Agent | `webinar_campaign_agent/agent.py` |
-| Tool use | `generate_utm_url`, `generate_qr_code`, `save_campaign_file` |
+| Tool use | `generate_utm_url`, `generate_qr_code`, `save_campaign_file`, `review_webinar_notes` |
 | MCP Server | `webinar_campaign_agent/mcp_server.py` |
 | Antigravity | Demonstrated in video |
 | Security features | Safe filename handling, output directory restriction, no committed secrets |
 | Deployability | Local setup instructions and ADK Web demo |
-| Agent skills | Campaign generation, structured extraction, copywriting, asset export |
+| Agent skills | Campaign generation, structured extraction, validation, tracking links, QR codes, asset export |
 
 ## Architecture
 
+The project can run in two modes. ADK mode demonstrates the agent implementation required by the course. CLI mode provides a practical local workflow where users place notes in an input file and generate only the assets they need.
+
+```text
+webinar-campaign-cli-agent/
+  webinar_campaign_agent/
+    __init__.py
+    agent.py
+    mcp_server.py
+    skills/
+      __init__.py
+      utm_skill.py
+      qr_skill.py
+      file_skill.py
+      validation_skill.py
+  input/
+    .gitkeep
+    raw_webinar_notes.txt
+  output/
+  samples/
+    raw_webinar_notes.txt
+  run_from_file.py
+  README.md
+  requirements.txt
+  .env.template
+  .gitignore
+  LICENSE
+```
+
 ```mermaid
 flowchart LR
-    A[Raw webinar notes] --> B[ADK root_agent]
+    A[ADK prompt] --> B[ADK root_agent]
+    C[input/raw_webinar_notes.txt] --> D[CLI runner]
+    D --> B
 
-    B --> C[generate_utm_url]
-    B --> D[generate_qr_code]
-    B --> E[save_campaign_file]
+    B --> E[skills/utm_skill.py]
+    B --> F[skills/qr_skill.py]
+    B --> G[skills/file_skill.py]
+    B --> H[skills/validation_skill.py]
 
-    C --> F[Tracked registration links]
-    D --> G[Timestamped QR code PNG]
-    E --> H[Timestamped campaign copy files]
+    E --> I[Tracked registration links]
+    F --> J[Timestamped QR code PNG]
+    G --> K[Timestamped campaign copy files]
+    H --> L[Missing-info checklist]
 
-    F --> I[output/]
-    G --> I
-    H --> I
+    I --> M[output/]
+    J --> M
+    K --> M
 
-    I --> J[MCP server]
-    J --> K[list_generated_assets]
-    J --> L[read_generated_asset]
+    M --> N[MCP server]
+    N --> O[list_generated_assets]
+    N --> P[read_generated_asset]
 ```
 
 | Component | Role |
 |---|---|
 | `root_agent` | Coordinates mode-aware campaign generation from rough webinar notes |
-| Agent tools | Create UTM URLs, QR codes, and timestamped campaign files |
+| `skills/` | Shared tool layer used by ADK mode and CLI mode |
+| `run_from_file.py` | Practical local runner that sends `input/raw_webinar_notes.txt` to the same ADK agent |
 | `output/` | Local ignored folder for generated campaign assets |
 | MCP server | Lets MCP-compatible clients list and inspect generated text assets |
 
@@ -128,19 +161,33 @@ Then edit `.env` and replace the placeholder with your Gemini API key:
 GOOGLE_API_KEY="YOUR_API_KEY"
 ```
 
-## Run the Agent
+## Usage
+
+This project supports two execution modes.
+
+### 1. ADK Agent Mode
+
+Use this mode to run the project as an ADK agent.
 
 ```bash
 adk run webinar_campaign_agent
 ```
 
-You can also run a one-shot prompt:
+Example prompt:
 
-```bash
-adk run webinar_campaign_agent "Generate a full webinar campaign for the notes in samples/raw_webinar_notes.txt"
+```text
+Generate only a LinkedIn post from these webinar notes:
+
+Topic: Using AI Agents to Improve Omnichannel Marketing Operations
+Speaker: Jane Lee
+Audience: Marketing managers
+Date: July 24, 2026
+Registration link: https://example.com/webinar
 ```
 
-## Run From a Notes File
+### 2. CLI File Mode
+
+Use this mode to process notes from a local input file.
 
 Create an input file:
 
@@ -178,6 +225,36 @@ python run_from_file.py linkedin
 ```
 
 This generates only the LinkedIn post, LinkedIn tracking URL, and LinkedIn share URL.
+
+Generated assets appear in:
+
+```text
+output/
+```
+
+## What Each Mode Is For
+
+| Mode | Command | Best for |
+|---|---|---|
+| ADK | `adk run webinar_campaign_agent` | Proving the ADK agent requirement |
+| CLI | `python run_from_file.py linkedin` | Fast practical generation |
+| CLI review | `python run_from_file.py review` | Missing-info checklist |
+| CLI full | `python run_from_file.py full` | Complete campaign package |
+
+## Final Demo Commands
+
+```bash
+python run_from_file.py review
+python run_from_file.py linkedin
+python run_from_file.py full
+adk run webinar_campaign_agent
+```
+
+Suggested demo positioning:
+
+```text
+I kept ADK as the agent interface because it maps directly to the course requirement, but I also added a CLI runner so the workflow is actually useful. Both modes reuse the same campaign tools for validation, UTM generation, QR code creation, and safe file export.
+```
 
 ## Run the ADK Web Demo
 
