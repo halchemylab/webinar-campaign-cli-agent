@@ -16,7 +16,7 @@ Marketing teams often spend hours converting webinar planning notes into publish
 
 ### Solution
 
-This project uses a Google ADK agent to extract structured webinar details, draft campaign copy, generate UTM links, create a QR code, and save reusable campaign files into an output folder.
+This project uses a Google ADK agent to read the user's requested output mode, extract structured webinar details, draft the requested campaign copy, generate relevant UTM links, create QR codes when needed, and save reusable campaign files into an output folder when the mode calls for it.
 
 ## Key Concepts Demonstrated
 
@@ -55,7 +55,7 @@ flowchart LR
 
 | Component | Role |
 |---|---|
-| `root_agent` | Coordinates campaign generation from rough webinar notes |
+| `root_agent` | Coordinates mode-aware campaign generation from rough webinar notes |
 | Agent tools | Create UTM URLs, QR codes, and timestamped campaign files |
 | `output/` | Local ignored folder for generated campaign assets |
 | MCP server | Lets MCP-compatible clients list and inspect generated text assets |
@@ -69,6 +69,21 @@ output/
   social_posts_YYYYMMDD_HHMMSS.md
   campaign_qr_YYYYMMDD_HHMMSS.png
 ```
+
+## Output Modes
+
+The agent reads the user's intent before generating assets.
+
+| User asks | Agent generates |
+|---|---|
+| Full campaign, everything, or all assets | Landing page, email, LinkedIn post, Facebook post, UTM links, QR code, saved files |
+| Just LinkedIn | LinkedIn post, LinkedIn UTM link, LinkedIn share URL |
+| Just Facebook | Facebook post, Facebook UTM link, Facebook share URL |
+| Email only | Subject lines, preview text, plain-text email draft |
+| Landing page only | Landing page copy |
+| Social posts only | LinkedIn and Facebook posts, UTM/share links |
+| QR code only | QR code from the registration URL |
+| Review the campaign | Suggestions only, unless file generation is requested |
 
 ## Setup
 
@@ -125,6 +140,45 @@ You can also run a one-shot prompt:
 adk run webinar_campaign_agent "Generate a full webinar campaign for the notes in samples/raw_webinar_notes.txt"
 ```
 
+## Run From a Notes File
+
+Create an input file:
+
+macOS/Linux:
+
+```bash
+mkdir -p input
+cp samples/raw_webinar_notes.txt input/raw_webinar_notes.txt
+```
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force input
+Copy-Item samples/raw_webinar_notes.txt input/raw_webinar_notes.txt
+```
+
+Then run the agent with a mode:
+
+```bash
+python run_from_file.py full
+python run_from_file.py linkedin
+python run_from_file.py facebook
+python run_from_file.py email
+python run_from_file.py social
+python run_from_file.py landing
+python run_from_file.py qr
+python run_from_file.py review
+```
+
+For example:
+
+```bash
+python run_from_file.py linkedin
+```
+
+This generates only the LinkedIn post, LinkedIn tracking URL, and LinkedIn share URL.
+
 ## Run the ADK Web Demo
 
 ```bash
@@ -168,6 +222,52 @@ Registration link: https://example.com/webinar
 Core idea:
 Teams waste hours turning event notes into landing pages, emails, social posts, tracking links, and QR codes.
 ```
+
+## Example Prompts
+
+### Full campaign
+
+```text
+Generate the full campaign from these webinar notes:
+...
+```
+
+### LinkedIn only
+
+```text
+Generate only a LinkedIn post from these webinar notes:
+...
+```
+
+### Facebook only
+
+```text
+Generate only a Facebook post from these webinar notes:
+...
+```
+
+### Email only
+
+```text
+Generate an email draft only from these webinar notes:
+...
+```
+
+### Social posts only
+
+```text
+Generate LinkedIn and Facebook posts only from these notes:
+...
+```
+
+### QR code only
+
+```text
+Generate a QR code for this registration URL:
+https://example.com/webinar
+```
+
+The key agent behavior is that it does not blindly generate every artifact. It reads the user's intent first. If you ask for only LinkedIn, it generates only LinkedIn copy and the LinkedIn tracking link. If you ask for the full campaign, it coordinates multiple tools to generate landing page copy, email, social posts, UTM links, QR code, and saved output files.
 
 ## Sample Input
 
