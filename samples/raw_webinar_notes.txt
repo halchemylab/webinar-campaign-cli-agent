@@ -1,0 +1,17 @@
+Webinar topic: Using AI Agents to Improve Omnichannel Marketing Operations
+
+Speaker: Jane Lee, Director of Growth Marketing at ExampleCo.
+Audience: Marketing managers, demand generation teams, and small business owners.
+Date: July 24, 2026
+Time: 11:00 AM Pacific
+Platform: Zoom
+Registration link: https://example.com/webinar
+
+Core idea:
+Teams waste hours turning event notes into landing pages, emails, social posts, tracking links, and QR codes. This webinar shows how agent workflows can reduce manual campaign production work.
+
+Key points:
+- How to transform rough notes into structured campaign assets
+- How UTM links improve attribution
+- How QR codes help bridge offline and digital promotion
+- How human review keeps campaign quality high
